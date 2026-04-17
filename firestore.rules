@@ -1,0 +1,72 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: clients
+// Document ID: {clientId}
+// Fields:
+//   - name: string (required)
+//   - phone: string
+//   - location: string
+//   - totalAmount: number (required)
+//   - advanceAmount: number (required)
+//   - progressPercentage: number
+//   - currentWork: string
+//   - createdAt: timestamp
+//   - ownerId: string (required)
+//
+// Collection: clients/{clientId}/expenses
+// Document ID: {expenseId}
+// Fields:
+//   - clientId: string (required)
+//   - store: string (required)
+//   - detail: string (required)
+//   - amount: number (required)
+//   - createdAt: timestamp
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidClient(data) {
+      return data.keys().hasAll(['name', 'totalAmount', 'advanceAmount', 'ownerId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.advanceAmount is number &&
+             data.ownerId == request.auth.uid;
+    }
+    
+    function isValidExpense(data) {
+      return data.keys().hasAll(['clientId', 'store', 'detail', 'amount']) &&
+             data.store is string && data.store.size() > 0 && data.store.size() < 100 &&
+             data.detail is string && data.detail.size() > 0 && data.detail.size() < 500 &&
+             data.amount is number && data.amount > 0;
+    }
+
+    match /clients/{clientId} {
+      allow read, write: if true;
+      
+      match /expenses/{expenseId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /miscExpenses/{expenseId} {
+      allow read, write: if true;
+    }
+  }
+}

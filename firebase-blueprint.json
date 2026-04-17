@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Client": {
+      "title": "Client",
+      "description": "A client record containing project details and progress tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Client name" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "location": { "type": "string", "description": "Project location" },
+        "totalAmount": { "type": "number", "description": "Total budget amount" },
+        "advanceAmount": { "type": "number", "description": "Current available advance/budget" },
+        "progressPercentage": { "type": "number", "description": "Work progress percentage" },
+        "currentWork": { "type": "string", "description": "Details of what is being worked on" },
+        "status": { "type": "string", "enum": ["active", "finished"], "description": "Project status" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "totalAmount", "advanceAmount", "ownerId"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "An expense record associated with a client.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "store": { "type": "string", "description": "Where it was bought" },
+        "detail": { "type": "string", "description": "Item details" },
+        "amount": { "type": "number", "description": "Expense amount" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clientId", "store", "detail", "amount"]
+    },
+    "MiscExpense": {
+      "title": "MiscExpense",
+      "description": "A general expense not tied to a specific client.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "store": { "type": "string" },
+        "detail": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "card"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["store", "detail", "amount", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Collection of clients"
+    },
+    "/clients/{clientId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Sub-collection of expenses for a specific client"
+    },
+    "/miscExpenses/{expenseId}": {
+      "schema": "MiscExpense",
+      "description": "General business expenses"
+    }
+  }
+}
