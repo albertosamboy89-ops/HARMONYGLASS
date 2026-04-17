@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { 
   collection, 
   onSnapshot, 
@@ -37,7 +37,103 @@ import { motion, AnimatePresence } from 'motion/react';
 
 type Tab = 'dashboard' | 'clientes' | 'deudas' | 'historial' | 'gastos-varios';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  return new Error(JSON.stringify(errInfo));
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="max-w-md w-full border-harmony-red/50 bg-card">
+            <CardHeader>
+              <CardTitle className="text-harmony-red flex items-center gap-2">
+                <Info className="h-5 w-5" /> Algo salió mal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground text-sm">
+                Se ha producido un error inesperado. Por favor, intenta recargar la página.
+              </p>
+              <div className="p-3 bg-secondary rounded-lg overflow-auto max-h-40">
+                <code className="text-[10px] text-foreground block whitespace-pre-wrap">
+                  {this.state.error?.message}
+                </code>
+              </div>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="w-full bg-mamei hover:bg-mamei/90"
+              >
+                Recargar Aplicación
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+}
+
+function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -177,15 +273,21 @@ export default function App() {
 
     try {
       const initialAdvanceAmount = Number(newClient.advanceAmount);
-      const clientRef = await addDoc(collection(db, 'clients'), {
+      const path = 'clients';
+      const clientData: any = {
         ...newClient,
         totalAmount: Number(newClient.totalAmount),
         advanceAmount: initialAdvanceAmount,
         progressPercentage: Number(newClient.progressPercentage) || 0,
         status: 'active',
-        ownerId: user?.uid,
         createdAt: Timestamp.now()
-      });
+      };
+
+      if (user?.uid) {
+        clientData.ownerId = user.uid;
+      }
+
+      const clientRef = await addDoc(collection(db, path), clientData);
 
       // Add initial advance to history
       if (initialAdvanceAmount > 0) {
@@ -209,7 +311,7 @@ export default function App() {
         voucherUrl: ''
       });
     } catch (error) {
-      console.error("Error adding client:", error);
+      throw handleFirestoreError(error, OperationType.CREATE, 'clients');
     }
   };
 
@@ -224,6 +326,7 @@ export default function App() {
         return;
       }
       
+      const path = `clients/${selectedClient.id}/expenses`;
       // Add expense
       await addDoc(collection(db, 'clients', selectedClient.id, 'expenses'), {
         ...newExpense,
@@ -247,8 +350,7 @@ export default function App() {
       setIsAddExpenseOpen(false);
       setNewExpense({ store: '', detail: '', amount: '', paymentMethod: 'cash' });
     } catch (error) {
-      console.error("Error adding expense:", error);
-      alert("Error al guardar el gasto: " + (error instanceof Error ? error.message : String(error)));
+      throw handleFirestoreError(error, OperationType.CREATE, `clients/${selectedClient.id}/expenses`);
     }
   };
 
@@ -264,11 +366,13 @@ export default function App() {
 
     try {
       const amount = Number(newAdvance.amount);
-      await addDoc(collection(db, 'clients', selectedClient.id, 'advances'), {
+      const data: any = {
         amount,
         voucherUrl: newAdvance.voucherUrl,
         createdAt: Timestamp.now()
-      });
+      };
+
+      await addDoc(collection(db, 'clients', selectedClient.id, 'advances'), data);
 
       const newTotalAdvance = selectedClient.advanceAmount + amount;
       await updateDoc(doc(db, 'clients', selectedClient.id), {
@@ -284,7 +388,7 @@ export default function App() {
       setNewAdvance({ amount: '', voucherUrl: '' });
       setPassword('');
     } catch (error) {
-      console.error("Error adding advance:", error);
+      throw handleFirestoreError(error, OperationType.CREATE, `clients/${selectedClient.id}/advances`);
     }
   };
 
@@ -313,17 +417,21 @@ export default function App() {
         return;
       }
 
-      await addDoc(collection(db, 'miscExpenses'), {
+      const expenseData: any = {
         ...newMiscExpense,
         amount: amount,
-        ownerId: user?.uid,
         createdAt: Timestamp.now()
-      });
+      };
+
+      if (user?.uid) {
+        expenseData.ownerId = user.uid;
+      }
+
+      await addDoc(collection(db, 'miscExpenses'), expenseData);
       setIsAddMiscExpenseOpen(false);
       setNewMiscExpense({ store: '', detail: '', amount: '', paymentMethod: 'cash' });
     } catch (error) {
-      console.error("Error adding misc expense:", error);
-      alert("Error al guardar el gasto: " + (error instanceof Error ? error.message : String(error)));
+      throw handleFirestoreError(error, OperationType.CREATE, 'miscExpenses');
     }
   };
 
@@ -335,17 +443,22 @@ export default function App() {
     }
 
     try {
-      await addDoc(collection(db, 'cashAdjustments'), {
+      const data: any = {
         amount: Number(newCash.amount),
         reason: newCash.reason,
-        ownerId: user?.uid,
         createdAt: Timestamp.now()
-      });
+      };
+
+      if (user?.uid) {
+        data.ownerId = user.uid;
+      }
+
+      await addDoc(collection(db, 'cashAdjustments'), data);
       setIsAddCashOpen(false);
       setNewCash({ amount: '', reason: '' });
       setPassword('');
     } catch (error) {
-      console.error("Error adding cash:", error);
+      throw handleFirestoreError(error, OperationType.CREATE, 'cashAdjustments');
     }
   };
 
@@ -1041,11 +1154,43 @@ export default function App() {
                       <p className="text-muted-foreground">Gastos generales no asociados a clientes.</p>
                     </div>
                     <Dialog open={isAddMiscExpenseOpen} onOpenChange={setIsAddMiscExpenseOpen}>
-                      <DialogTrigger render={
-                        <Button className="rounded-full bg-mamei hover:bg-mamei/90 text-white px-6 shadow-lg shadow-mamei/20 transition-all hover:scale-105 active:scale-95">
-                          <Plus className="mr-2 h-5 w-5" /> Nuevo Gasto
-                        </Button>
-                      } />
+                      <div className="flex items-center gap-2">
+                         <Dialog open={isAddCashOpen} onOpenChange={setIsAddCashOpen}>
+                          <DialogTrigger render={
+                            <Button variant="outline" className="rounded-full px-4 border-mamei text-mamei hover:bg-mamei/10">
+                              <Banknote className="mr-2 h-4 w-4" /> Ajuste Caja
+                            </Button>
+                          } />
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Ajuste de Efectivo (Capital)</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleAddCash} className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="c-amount">Monto ($)</Label>
+                                <Input id="c-amount" type="number" value={newCash.amount} onChange={e => setNewCash({...newCash, amount: e.target.value})} required />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="c-reason">Razón / Fuente</Label>
+                                <Input id="c-reason" value={newCash.reason} onChange={e => setNewCash({...newCash, reason: e.target.value})} placeholder="Ej: Capital Inicial Abril" required />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="c-pass">Contraseña Admin</Label>
+                                <Input id="c-pass" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                              </div>
+                              <DialogFooter>
+                                <Button type="submit" className="w-full bg-mamei">Guardar Ajuste</Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+
+                        <DialogTrigger render={
+                          <Button className="rounded-full bg-mamei hover:bg-mamei/90 text-white px-6 shadow-lg shadow-mamei/20 transition-all hover:scale-105 active:scale-95">
+                            <Plus className="mr-2 h-5 w-5" /> Nuevo Gasto
+                          </Button>
+                        } />
+                      </div>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Agregar Gasto General</DialogTitle>
@@ -1206,36 +1351,8 @@ export default function App() {
           </div>
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.2)]">
-          <div className="container mx-auto flex h-16 items-center justify-around px-2">
-            {[
-              { id: 'clientes', icon: Users, label: 'Clientes' },
-              { id: 'deudas', icon: Receipt, label: 'Deudas' },
-              { id: 'historial', icon: History, label: 'Historial' },
-              { id: 'gastos-varios', icon: Wallet, label: 'Varios' }
-            ].map((item) => (
-              <button 
-                key={item.id}
-                onClick={() => { setActiveTab(item.id as any); setSelectedClient(null); }}
-                className={`flex flex-col items-center gap-1 transition-all duration-300 relative ${
-                  activeTab === item.id ? 'text-mamei scale-110' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <item.icon className={`h-6 w-6 ${activeTab === item.id ? 'fill-mamei/10' : ''}`} />
-                <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
-                {activeTab === item.id && (
-                  <motion.div 
-                    layoutId="activeTab"
-                    className="absolute -bottom-2 h-1 w-1 rounded-full bg-mamei"
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </nav>
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 z-50 w-full lg:hidden border-t border-border bg-card/95 backdrop-blur-md px-4 h-16 flex items-center justify-between">
+      {/* Navigation (Mobile View) */}
+      <nav className="fixed bottom-0 left-0 z-50 w-full lg:hidden border-t border-border bg-card/95 backdrop-blur-md px-4 h-20 flex items-center justify-between pb-safe">
         {[
           { id: 'dashboard', icon: TrendingUp, label: 'Inicio' },
           { id: 'clientes', icon: Users, label: 'Proyectos' },
@@ -1249,11 +1366,14 @@ export default function App() {
               setSelectedClient(null);
             }}
             className={`flex flex-col items-center gap-1 transition-all ${
-              activeTab === item.id ? 'text-mamei transform scale-110' : 'text-muted-foreground'
-            }`}
+              activeTab === item.id ? 'text-mamei transform scale-110 font-bold' : 'text-muted-foreground'
+            } min-w-[64px]`}
           >
-            <item.icon className="h-5 w-5" />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+            <item.icon className="h-6 w-6" />
+            <span className="text-[10px] uppercase tracking-tighter">{item.label}</span>
+            {activeTab === item.id && (
+              <motion.div layoutId="mobileNavDot" className="h-1 w-1 rounded-full bg-mamei mt-1" />
+            )}
           </button>
         ))}
       </nav>

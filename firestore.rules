@@ -63,9 +63,17 @@ service cloud.firestore {
       match /expenses/{expenseId} {
         allow read, write: if true;
       }
+      
+      match /advances/{advanceId} {
+        allow read, write: if true;
+      }
     }
 
     match /miscExpenses/{expenseId} {
+      allow read, write: if true;
+    }
+    
+    match /cashAdjustments/{adjustmentId} {
       allow read, write: if true;
     }
   }
