@@ -592,7 +592,7 @@ function AppContent() {
     </div>
   );
 
-  const INITIAL_CASH = 40650;
+  const INITIAL_CASH = 37210;
   const totalAdjustments = cashAdjustments.reduce((acc, curr) => acc + curr.amount, 0);
   const totalCashExpenses = miscExpenses.filter(m => m.paymentMethod === 'cash').reduce((acc, m) => acc + m.amount, 0);
   const totalClientAdvances = clients.filter(c => !c.status || c.status === 'active').reduce((acc, c) => acc + c.advanceAmount, 0);
