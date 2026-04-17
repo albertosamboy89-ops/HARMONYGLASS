@@ -32,7 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Plus, LogIn, LogOut, User as UserIcon, MapPin, Phone, DollarSign, Trash2, Info, ArrowLeft, ArrowRight, TrendingUp, Users, Receipt, History, Wallet, CreditCard, Banknote } from 'lucide-react';
+import { Plus, LogOut, User as UserIcon, MapPin, Phone, DollarSign, Trash2, Info, ArrowLeft, ArrowRight, TrendingUp, Users, Receipt, History, Wallet, CreditCard, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type Tab = 'dashboard' | 'clientes' | 'deudas' | 'historial' | 'gastos-varios';
@@ -256,15 +256,6 @@ function AppContent() {
 
     return () => unsubscribe();
   }, [selectedClient]);
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login error:", error);
-    }
-  };
 
   const handleLogout = () => signOut(auth);
 
@@ -652,7 +643,7 @@ function AppContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            {user ? (
+            {user && (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-bold leading-none">{user.displayName}</p>
@@ -675,10 +666,6 @@ function AppContent() {
                   </Button>
                 </div>
               </div>
-            ) : (
-              <Button onClick={handleLogin} className="rounded-full bg-mamei hover:bg-mamei/90 text-white">
-                <LogIn className="mr-2 h-4 w-4" /> Acceder
-              </Button>
             )}
           </div>
         </div>
