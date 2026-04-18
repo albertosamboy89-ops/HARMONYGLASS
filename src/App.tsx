@@ -714,6 +714,19 @@ function AppContent() {
 
                   {/* Top Stats Dashboard */}
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <Card className="border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-white/20 rounded-2xl">
+                            <Wallet className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold uppercase opacity-80">Flujo de Caja Real</p>
+                            <h3 className="text-2xl font-black">${availableCash.toLocaleString()}</h3>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                     <Card className="border-none bg-gradient-to-br from-mamei to-orange-700 text-white shadow-xl shadow-mamei/20">
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
@@ -723,19 +736,6 @@ function AppContent() {
                           <div>
                             <p className="text-xs font-bold uppercase opacity-80">Proyectos Activos</p>
                             <h3 className="text-2xl font-black">{activeClients.length}</h3>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-none bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-xl shadow-blue-500/20">
-                      <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 bg-white/20 rounded-2xl">
-                            <DollarSign className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold uppercase opacity-80">Total Por Cobrar</p>
-                            <h3 className="text-2xl font-black">${(totalRevenue - totalCollected).toLocaleString()}</h3>
                           </div>
                         </div>
                       </CardContent>
@@ -753,15 +753,15 @@ function AppContent() {
                         </div>
                       </CardContent>
                     </Card>
-                    <Card className="border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20">
+                    <Card className="border-none bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-xl shadow-blue-500/20">
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-white/20 rounded-2xl">
-                            <Wallet className="h-6 w-6" />
+                            <DollarSign className="h-6 w-6" />
                           </div>
                           <div>
-                            <p className="text-xs font-bold uppercase opacity-80">Flujo de Caja Real</p>
-                            <h3 className="text-2xl font-black">${availableCash.toLocaleString()}</h3>
+                            <p className="text-xs font-bold uppercase opacity-80">Total Por Cobrar</p>
+                            <h3 className="text-2xl font-black">${(totalRevenue - totalCollected).toLocaleString()}</h3>
                           </div>
                         </div>
                       </CardContent>
