@@ -522,13 +522,6 @@ function AppContent() {
     return 'bg-harmony-red';
   };
 
-  const getStatusBadge = (advance: number, total: number) => {
-    const ratio = advance / total;
-    if (ratio > 0.5) return <Badge className="bg-harmony-blue/20 text-harmony-blue border-harmony-blue/30">Estable</Badge>;
-    if (ratio > 0.2) return <Badge className="bg-mamei/20 text-mamei border-mamei/30">Atención</Badge>;
-    return <Badge className="bg-harmony-red/20 text-harmony-red border-harmony-red/30">Crítico</Badge>;
-  };
-
   const renderClients = (filteredClients: Client[]) => (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {filteredClients.map(client => (
@@ -594,7 +587,6 @@ function AppContent() {
   const availableCash = INITIAL_CASH + totalAdjustments + totalClientAdvances - totalCashExpenses;
 
   const activeClients = clients.filter(c => !c.status || c.status === 'active');
-  const finishedClients = clients.filter(c => c.status === 'finished');
   const totalRevenue = clients.reduce((acc, c) => acc + c.totalAmount, 0);
   const totalCollected = clients.reduce((acc, c) => acc + c.advanceAmount, 0);
 
