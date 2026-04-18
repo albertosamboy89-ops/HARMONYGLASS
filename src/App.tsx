@@ -3,18 +3,14 @@ import {
   collection, 
   onSnapshot, 
   query, 
-  where, 
   addDoc, 
   updateDoc, 
   doc, 
   deleteDoc, 
   Timestamp,
-  orderBy,
-  getDocFromServer
+  orderBy
 } from 'firebase/firestore';
 import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
   onAuthStateChanged, 
   User,
   signOut 
@@ -32,7 +28,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Plus, LogOut, User as UserIcon, MapPin, Phone, DollarSign, Trash2, Info, ArrowLeft, ArrowRight, TrendingUp, Users, Receipt, History, Wallet, CreditCard, Banknote } from 'lucide-react';
+import { Plus, LogOut, MapPin, Phone, DollarSign, Trash2, Info, ArrowLeft, ArrowRight, TrendingUp, Users, Receipt, History, Wallet, CreditCard, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type Tab = 'dashboard' | 'clientes' | 'deudas' | 'historial' | 'gastos-varios';
@@ -317,7 +313,6 @@ function AppContent() {
         return;
       }
       
-      const path = `clients/${selectedClient.id}/expenses`;
       // Add expense
       await addDoc(collection(db, 'clients', selectedClient.id, 'expenses'), {
         ...newExpense,
@@ -769,24 +764,31 @@ function AppContent() {
                         <CardTitle className="flex items-center gap-2">
                           <History className="h-5 w-5 text-mamei" /> Actividad Reciente
                         </CardTitle>
-                        <Button variant="link" size="sm" onClick={() => setActiveTab('historial')} className="text-mamei">Ver Todo</Button>
+                        <Button variant="link" size="sm" onClick={() => setActiveTab('gastos-varios')} className="text-mamei font-bold uppercase tracking-tighter">Ver Detalles</Button>
                       </CardHeader>
-                      <Table>
-                        <TableBody>
-                          {miscExpenses.slice(0, 5).map(exp => (
-                            <TableRow key={exp.id} className="hover:bg-muted/50 border-border">
-                              <TableCell className="font-bold">{exp.store}</TableCell>
-                              <TableCell className="text-muted-foreground">{exp.detail}</TableCell>
-                              <TableCell className="text-right font-black text-harmony-red">-${exp.amount.toLocaleString()}</TableCell>
-                            </TableRow>
-                          ))}
-                          {miscExpenses.length === 0 && (
-                             <TableRow>
-                               <TableCell colSpan={3} className="text-center py-10 text-muted-foreground">Sin actividad reciente.</TableCell>
-                             </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
+                      <ScrollArea className="h-[300px]">
+                        <Table>
+                          <TableBody>
+                            {miscExpenses.map(exp => (
+                              <TableRow key={exp.id} className="hover:bg-muted/50 border-border">
+                                <TableCell className="font-bold">
+                                  <div className="flex flex-col">
+                                    <span>{exp.store}</span>
+                                    <span className="text-[10px] text-muted-foreground font-normal">{exp.createdAt?.toDate().toLocaleDateString()}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">{exp.detail}</TableCell>
+                                <TableCell className="text-right font-black text-harmony-red">-${exp.amount.toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
+                            {miscExpenses.length === 0 && (
+                               <TableRow>
+                                 <TableCell colSpan={3} className="text-center py-10 text-muted-foreground">Sin actividad reciente.</TableCell>
+                               </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
                     </Card>
                   </div>
                 </motion.div>
