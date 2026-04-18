@@ -1,11 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@fontsource-variable/geist";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-heading: 'Playfair Display', serif;
     --font-sans: 'Geist Variable', sans-serif;
     --color-mamei: var(--mamei);
     --color-mamei-foreground: var(--mamei-foreground);

@@ -602,17 +602,55 @@ function AppContent() {
     <div className="min-h-screen bg-background font-sans text-foreground pb-24 md:pb-0">
       {/* Sidebar for Desktop / Header for all */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/90 backdrop-blur-md shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-1.5 bg-mamei rounded-full" />
-              <h1 className="text-xl font-black tracking-tighter text-foreground hidden sm:block">
-                HARMONY <span className="text-mamei">GLASS</span>
-              </h1>
-              <h1 className="text-xl font-black tracking-tighter text-foreground sm:hidden">
-                H<span className="text-mamei">G</span>
-              </h1>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex items-center gap-4 cursor-pointer group"
+              onClick={() => { setActiveTab('dashboard'); setSelectedClient(null); }}
+            >
+              <div className="flex items-center gap-3">
+                <motion.div 
+                  animate={{ 
+                    height: [32, 48, 32],
+                    backgroundColor: ["#f59e0b", "#fbbf24", "#f59e0b"]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-2.5 bg-mamei rounded-full shadow-[0_0_20px_rgba(245,158,11,0.6)]" 
+                />
+                <div className="flex flex-col relative">
+                  <h1 className="text-3xl md:text-4xl font-heading font-black tracking-tighter text-foreground leading-none flex items-baseline">
+                    <motion.span
+                      animate={{ 
+                        backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                      }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+                      className="bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/80 to-foreground bg-[length:200%_auto]"
+                    >
+                      Harmony
+                    </motion.span>
+                    <motion.span 
+                      animate={{ 
+                        opacity: [0.8, 1, 0.8],
+                        scale: [1, 1.02, 1]
+                      }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                      className="text-mamei italic ml-2 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]"
+                    >
+                      Glass
+                    </motion.span>
+                  </h1>
+                  <motion.div 
+                    className="absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-mamei to-transparent rounded-full"
+                    initial={{ width: 0 }}
+                    whileHover={{ width: '100%' }}
+                    transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                  />
+                </div>
+              </div>
+            </motion.div>
             
             <nav className="hidden lg:flex items-center gap-1 ml-8">
                {[
@@ -677,9 +715,9 @@ function AppContent() {
                   exit={{ opacity: 0, scale: 0.98 }}
                   className="space-y-8"
                 >
-                  <div className="flex flex-col gap-2">
-                    <h2 className="text-4xl font-black tracking-tight">Dashboard Ejecutivo</h2>
-                    <p className="text-muted-foreground">Resumen estratégico de operaciones y finanzas.</p>
+                  <div className="flex flex-col gap-1">
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground/90 uppercase">Dashboard Ejecutivo</h2>
+                    <p className="text-xs text-muted-foreground italic">Resumen estratégico de operaciones y finanzas.</p>
                   </div>
 
                   {/* Top Stats Dashboard */}
