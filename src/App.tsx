@@ -1371,30 +1371,55 @@ function AppContent() {
       </main>
 
       {/* Navigation (Mobile View) */}
-      <nav className="fixed bottom-0 left-0 z-50 w-full lg:hidden border-t border-border bg-card/95 backdrop-blur-md px-4 h-20 flex items-center justify-between pb-safe">
+      <nav className="fixed bottom-4 left-4 right-4 z-50 lg:hidden h-20 bg-card/80 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] px-4 flex items-center justify-around">
         {[
           { id: 'dashboard', icon: TrendingUp, label: 'Inicio' },
           { id: 'clientes', icon: Users, label: 'Proyectos' },
           { id: 'gastos-varios', icon: Banknote, label: 'Caja' },
           { id: 'historial', icon: History, label: 'Historial' }
-        ].map((item) => (
-          <button
-            key={item.id}
-            onClick={() => {
-              setActiveTab(item.id as Tab);
-              setSelectedClient(null);
-            }}
-            className={`flex flex-col items-center gap-1 transition-all ${
-              activeTab === item.id ? 'text-mamei transform scale-110 font-bold' : 'text-muted-foreground'
-            } min-w-[64px]`}
-          >
-            <item.icon className="h-6 w-6" />
-            <span className="text-[10px] uppercase tracking-tighter">{item.label}</span>
-            {activeTab === item.id && (
-              <motion.div layoutId="mobileNavDot" className="h-1 w-1 rounded-full bg-mamei mt-1" />
-            )}
-          </button>
-        ))}
+        ].map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id as Tab);
+                setSelectedClient(null);
+              }}
+              className="relative flex flex-col items-center justify-center h-full min-w-[70px] outline-none group"
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId="activePill"
+                  className="absolute inset-x-0 inset-y-2 bg-mamei/20 rounded-2xl border border-mamei/20"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              
+              <motion.div
+                animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
+                className={`relative z-10 flex flex-col items-center gap-1 ${
+                  isActive ? 'text-mamei' : 'text-muted-foreground group-active:scale-95 transition-transform'
+                }`}
+              >
+                <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-mamei/10' : ''}`}>
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.05em] ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+                  {item.label}
+                </span>
+              </motion.div>
+
+              {isActive && (
+                <motion.div 
+                  layoutId="activeIndicator"
+                  className="absolute -bottom-1 h-1.5 w-1.5 rounded-full bg-mamei shadow-[0_0_10px_rgba(245,158,11,1)]"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          );
+        })}
       </nav>
     </div>
   );
