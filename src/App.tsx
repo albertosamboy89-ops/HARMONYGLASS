@@ -724,16 +724,7 @@ function AppContent() {
 
                   {/* Top Stats Dashboard */}
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="relative border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 overflow-hidden">
-                      {/* Hidden Admin Trigger */}
-                      <div 
-                        className="absolute top-0 right-0 w-12 h-12 z-50 cursor-default" 
-                        onClick={() => {
-                          if (prompt('Ingrese contraseña Maestra:') === '1989') {
-                            setIsAdminOpen(true);
-                          }
-                        }}
-                      />
+                    <Card className="border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20">
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-white/20 rounded-2xl">
@@ -1184,8 +1175,17 @@ function AppContent() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
+                  className="space-y-6 relative"
                 >
+                  {/* Hidden Admin Trigger */}
+                  <div 
+                    className="absolute top-0 right-0 w-12 h-12 z-50 cursor-default" 
+                    onClick={() => {
+                      if (prompt('Ingrese contraseña Maestra:') === '1989') {
+                        setIsAdminOpen(true);
+                      }
+                    }}
+                  />
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-3xl font-bold tracking-tight text-foreground">Gastos Varios</h2>
@@ -1390,7 +1390,7 @@ function AppContent() {
       </main>
 
       {/* Navigation (Mobile View) */}
-      <nav className="fixed bottom-4 left-4 right-4 z-50 lg:hidden h-20 bg-card/80 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] px-4 flex items-center justify-around">
+      <nav className="fixed bottom-6 left-6 right-6 z-50 lg:hidden h-20 bg-black/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] px-4 flex items-center justify-around overflow-hidden">
         {[
           { id: 'dashboard', icon: TrendingUp, label: 'Inicio' },
           { id: 'clientes', icon: Users, label: 'Proyectos' },
@@ -1405,35 +1405,44 @@ function AppContent() {
                 setActiveTab(item.id as Tab);
                 setSelectedClient(null);
               }}
-              className="relative flex flex-col items-center justify-center h-full min-w-[70px] outline-none group"
+              className="relative flex flex-col items-center justify-center h-full min-w-[70px] outline-none group isolate"
             >
-              {isActive && (
-                <motion.div 
-                  layoutId="activePill"
-                  className="absolute inset-x-0 inset-y-2 bg-mamei/20 rounded-2xl border border-mamei/20"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTabPill"
+                    className="w-14 h-14 bg-gradient-to-tr from-mamei/20 to-orange-500/10 rounded-2xl border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                  />
+                )}
+              </div>
               
               <motion.div
-                animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                className={`relative z-10 flex flex-col items-center gap-1 ${
-                  isActive ? 'text-mamei' : 'text-muted-foreground group-active:scale-95 transition-transform'
-                }`}
+                animate={isActive ? { y: -2 } : { y: 0 }}
+                whileTap={{ scale: 0.9 }}
+                className={`relative z-10 flex flex-col items-center gap-1.5 ${
+                  isActive ? 'text-mamei' : 'text-zinc-500 hover:text-zinc-300'
+                } transition-colors duration-300`}
               >
-                <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-mamei/10' : ''}`}>
-                  <item.icon className="h-6 w-6" />
+                <div className="relative">
+                  <item.icon className={`h-6 w-6 transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'scale-100'}`} />
+                  {isActive && (
+                    <motion.div
+                      layoutId="glow"
+                      className="absolute inset-0 bg-mamei/40 blur-xl -z-10"
+                    />
+                  )}
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-[0.05em] ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+                <span className={`text-[9px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-40 translate-y-0.5'}`}>
                   {item.label}
                 </span>
               </motion.div>
 
               {isActive && (
                 <motion.div 
-                  layoutId="activeIndicator"
-                  className="absolute -bottom-1 h-1.5 w-1.5 rounded-full bg-mamei shadow-[0_0_10px_rgba(245,158,11,1)]"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  layoutId="activeDot"
+                  className="absolute bottom-2 h-1 w-1 rounded-full bg-mamei shadow-[0_0_10px_rgba(245,158,11,0.8)]"
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
                 />
               )}
             </button>
