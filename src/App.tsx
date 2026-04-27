@@ -17,6 +17,7 @@ import {
 } from 'firebase/auth';
 import { db, auth } from './lib/firebase';
 import { Client, Expense, MiscExpense, CashAdjustment } from './types';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -137,6 +138,7 @@ function AppContent() {
   const [miscExpenses, setMiscExpenses] = useState<MiscExpense[]>([]);
   const [cashAdjustments, setCashAdjustments] = useState<CashAdjustment[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddMiscExpenseOpen, setIsAddMiscExpenseOpen] = useState(false);
@@ -501,6 +503,14 @@ function AppContent() {
     }
   };
 
+  const handleDeleteCashAdjustment = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'cashAdjustments', id));
+    } catch (error) {
+      console.error("Error deleting cash adjustment:", error);
+    }
+  };
+
   const handleFinishWork = async (clientId: string) => {
     if (!confirm('¿Marcar este trabajo como terminado? Se moverá al historial.')) return;
     try {
@@ -580,7 +590,7 @@ function AppContent() {
     </div>
   );
 
-  const INITIAL_CASH = 35104;
+  const INITIAL_CASH = 0;
   const totalAdjustments = cashAdjustments.reduce((acc, curr) => acc + curr.amount, 0);
   const totalCashExpenses = miscExpenses.filter(m => m.paymentMethod === 'cash').reduce((acc, m) => acc + m.amount, 0);
   const totalClientAdvances = clients.filter(c => !c.status || c.status === 'active').reduce((acc, c) => acc + c.advanceAmount, 0);
@@ -591,7 +601,7 @@ function AppContent() {
   const totalCollected = clients.reduce((acc, c) => acc + c.advanceAmount, 0);
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground pb-24 md:pb-0">
+    <div className="min-h-screen bg-background font-sans text-foreground pb-24 md:pb-0 relative">
       {/* Sidebar for Desktop / Header for all */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/90 backdrop-blur-md shadow-sm">
         <div className="container mx-auto flex h-20 items-center justify-between px-4">
@@ -714,7 +724,16 @@ function AppContent() {
 
                   {/* Top Stats Dashboard */}
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20">
+                    <Card className="relative border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 overflow-hidden">
+                      {/* Hidden Admin Trigger */}
+                      <div 
+                        className="absolute top-0 right-0 w-12 h-12 z-50 cursor-default" 
+                        onClick={() => {
+                          if (prompt('Ingrese contraseña Maestra:') === '1989') {
+                            setIsAdminOpen(true);
+                          }
+                        }}
+                      />
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-white/20 rounded-2xl">
@@ -1421,6 +1440,117 @@ function AppContent() {
           );
         })}
       </nav>
+
+      {/* Admin Dialog for Cleanup */}
+      <Dialog open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+        <DialogContent className="max-w-3xl bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-mamei rotate-180" />
+              Panel de Control Administrativo
+            </DialogTitle>
+          </DialogHeader>
+          
+          <Tabs defaultValue="reposiciones" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+              <TabsTrigger value="reposiciones">Reposiciones</TabsTrigger>
+              <TabsTrigger value="gastos">Gastos Varios</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="reposiciones" className="space-y-4 py-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Listado de ingresos manuales a caja.</p>
+              </div>
+              <ScrollArea className="h-[400px] pr-4 border rounded-xl p-2 bg-black/20">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Razón</TableHead>
+                      <TableHead className="text-right">Monto</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cashAdjustments.map(adj => (
+                      <TableRow key={adj.id}>
+                        <TableCell className="text-xs text-muted-foreground">{adj.createdAt?.toDate().toLocaleDateString()}</TableCell>
+                        <TableCell className="font-medium">{adj.reason}</TableCell>
+                        <TableCell className="text-right font-bold text-emerald-500">${adj.amount.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-harmony-red hover:bg-harmony-red/10"
+                            onClick={() => {
+                              if (confirm('¿Eliminar esta reposición?')) {
+                                handleDeleteCashAdjustment(adj.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {cashAdjustments.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">No hay reposiciones registradas.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="gastos" className="space-y-4 py-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Listado de gastos operacionales fuera de proyectos.</p>
+              </div>
+              <ScrollArea className="h-[400px] pr-4 border rounded-xl p-2 bg-black/20">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Descripción</TableHead>
+                      <TableHead className="text-right">Monto</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {miscExpenses.map(expense => (
+                      <TableRow key={expense.id}>
+                        <TableCell className="text-xs text-muted-foreground">{expense.createdAt?.toDate().toLocaleDateString()}</TableCell>
+                        <TableCell className="font-medium">{expense.store} - {expense.detail}</TableCell>
+                        <TableCell className="text-right font-bold text-harmony-red">${expense.amount.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-harmony-red hover:bg-harmony-red/10"
+                            onClick={() => {
+                              if (confirm('¿Eliminar este gasto?')) {
+                                handleDeleteMiscExpense(expense.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {miscExpenses.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">No hay gastos registrados.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
