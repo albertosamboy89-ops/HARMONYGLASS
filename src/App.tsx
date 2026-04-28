@@ -593,8 +593,36 @@ function AppContent() {
   const INITIAL_CASH = 0;
   const totalAdjustments = cashAdjustments.reduce((acc, curr) => acc + curr.amount, 0);
   const totalCashExpenses = miscExpenses.filter(m => m.paymentMethod === 'cash').reduce((acc, m) => acc + m.amount, 0);
-  const totalClientAdvances = clients.filter(c => !c.status || c.status === 'active').reduce((acc, c) => acc + c.advanceAmount, 0);
-  const availableCash = INITIAL_CASH + totalAdjustments + totalClientAdvances - totalCashExpenses;
+  
+  // La caja ahora solo refleja reposiciones y gastos directos, independiente de adelantos de proyectos
+  const availableCash = INITIAL_CASH + totalAdjustments - totalCashExpenses;
+
+  const handleMasterReset = async () => {
+    if (!confirm('¿ESTÁS TOTALMENTE SEGURO? Esta acción eliminará TODOS los proyectos, gastos e ingresos de caja. No se puede deshacer.')) return;
+    
+    const confirmPass = prompt('Escriba la clave de confirmación final:');
+    if (confirmPass !== '1989') {
+      alert('Clave incorrecta. Operación cancelada.');
+      return;
+    }
+
+    try {
+      // Delete all clients
+      const clientPromises = clients.map(c => deleteDoc(doc(db, 'clients', c.id)));
+      // Delete all misc expenses
+      const expensePromises = miscExpenses.map(e => deleteDoc(doc(db, 'miscExpenses', e.id)));
+      // Delete all adjustments
+      const adjPromises = cashAdjustments.map(a => deleteDoc(doc(db, 'cashAdjustments', a.id)));
+
+      await Promise.all([...clientPromises, ...expensePromises, ...adjPromises]);
+      
+      alert('Base de datos reiniciada correctamente. Todo está en 0.');
+      setIsAdminOpen(false);
+    } catch (error) {
+      console.error("Error in Master Reset:", error);
+      alert('Error crítico al intentar borrar los datos.');
+    }
+  };
 
   const activeClients = clients.filter(c => !c.status || c.status === 'active');
   const totalRevenue = clients.reduce((acc, c) => acc + c.totalAmount, 0);
@@ -1177,15 +1205,6 @@ function AppContent() {
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-6 relative"
                 >
-                  {/* Hidden Admin Trigger */}
-                  <div 
-                    className="absolute top-0 right-0 w-12 h-12 z-50 cursor-default" 
-                    onClick={() => {
-                      if (prompt('Ingrese contraseña Maestra:') === '1989') {
-                        setIsAdminOpen(true);
-                      }
-                    }}
-                  />
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-3xl font-bold tracking-tight text-foreground">Gastos Varios</h2>
@@ -1281,6 +1300,15 @@ function AppContent() {
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {/* Efectivo Disponible */}
                     <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-2xl shadow-emerald-900/30">
+                      {/* Hidden Admin Trigger inside card - Expanded for easier touch */}
+                      <div 
+                        className="absolute top-0 left-0 w-full h-14 z-50 cursor-default opacity-0" 
+                        onClick={() => {
+                          if (prompt('CONTROL DE SEGURIDAD - Ingrese clave:') === '1989') {
+                            setIsAdminOpen(true);
+                          }
+                        }}
+                      />
                       <div className="absolute top-0 right-0 p-3 opacity-20">
                         <Wallet className="h-16 w-16" />
                       </div>
@@ -1461,9 +1489,10 @@ function AppContent() {
           </DialogHeader>
           
           <Tabs defaultValue="reposiciones" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+            <TabsList className="grid w-full grid-cols-3 bg-secondary/50">
               <TabsTrigger value="reposiciones">Reposiciones</TabsTrigger>
               <TabsTrigger value="gastos">Gastos Varios</TabsTrigger>
+              <TabsTrigger value="danger" className="text-harmony-red">SEGURIDAD</TabsTrigger>
             </TabsList>
             
             <TabsContent value="reposiciones" className="space-y-4 py-4">
@@ -1556,6 +1585,27 @@ function AppContent() {
                   </TableBody>
                 </Table>
               </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="danger" className="space-y-6 py-10 flex flex-col items-center justify-center text-center">
+              <div className="p-4 bg-harmony-red/10 rounded-full mb-2">
+                <Trash2 className="h-12 w-12 text-harmony-red" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold">Zona de Peligro</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Esta acción borrará el historial completo de transacciones y proyectos activos. 
+                  Solo úselo si desea empezar un nuevo ciclo contable desde cero.
+                </p>
+              </div>
+              <Button 
+                variant="destructive" 
+                size="lg" 
+                className="font-black uppercase tracking-widest shadow-xl shadow-harmony-red/20"
+                onClick={handleMasterReset}
+              >
+                Cerca Total de Base de Datos
+              </Button>
             </TabsContent>
           </Tabs>
         </DialogContent>
